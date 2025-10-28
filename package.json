@@ -1,0 +1,25 @@
+{
+  "name": "trackii-backend",
+  "version": "1.0.0",
+  "description": "**Trackii** is a personal and family wellness tracker built with **React, Express, MongoDB, and Tailwind CSS**.   It helps users log daily health data — such as **weight, meals, water intake, and prescriptions** — while providing a clean, modern dashboard to visualize progress and stay organized.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-validator": "^7.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.2",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
