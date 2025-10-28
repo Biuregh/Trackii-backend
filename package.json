@@ -4,7 +4,9 @@
   "description": "**Trackii** is a personal and family wellness tracker built with **React, Express, MongoDB, and Tailwind CSS**.   It helps users log daily health data — such as **weight, meals, water intake, and prescriptions** — while providing a clean, modern dashboard to visualize progress and stay organized.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "",
