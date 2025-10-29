@@ -1,4 +1,14 @@
+
 module.exports = (err, req, res, next) => {
-    const code = err.status || 500;
-    res.status(code).json({ message: err.message || "server error" });
-}
+    console.error(err);
+
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Server error";
+
+    const payload = { message };
+    if (err.errors && Array.isArray(err.errors)) {
+        payload.errors = err.errors;
+    }
+
+    res.status(status).json(payload);
+};

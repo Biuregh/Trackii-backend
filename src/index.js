@@ -15,14 +15,15 @@ require("./config/passport")(passport);
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/v1/profiles", require("./routes/profiles"));
 app.use("/api/v1/auth", require("./routes/auth"));
-app.use('/api/v1/logs', require('./routes/logs'));
-app.use('/api/v1/prescriptions', require('./routes/prescriptions'));
+app.use("/api/v1/logs", require("./routes/logs"));
+app.use("/api/v1/prescriptions", require("./routes/prescriptions"));
 app.use((req, res, next) => res.status(404).json({ message: "Not found" }));
 app.use((err, req, res, next) => {
     console.error(err);
     const code = err.status || 500;
     res.status(code).json({ message: err.message || "Server error" });
 });
+app.use(require("./middleware/errorHandler"));
 
 const PORT = process.env.PORT || 4000;
 
