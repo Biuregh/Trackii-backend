@@ -3,6 +3,8 @@ const { body, param, validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 const authGuard = require("../middleware/authGuard");
 const Profile = require("../models/Profile");
+const Log = require("../models/Log");
+
 
 router.use(authGuard);
 
@@ -22,6 +24,41 @@ router.get("/", async (req, res, next) => {
   try {
     const profiles = await Profile.find({ userId: req.user.userId }).sort({ createdAt: -1 }).lean();
     res.json({ data: profiles });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:id/stats/weight", async (req, res, next) => {
+  try {
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    const Profile = require("../models/Profile");
+    const p = await Profile.findById(req.params.id).select("userId").lean();
+    if (!p || p.userId.toString() !== req.user.userId) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    const latestDesc = await Log.find({
+      profileId: req.params.id,
+      category: "weight"
+    }).sort({ date: -1 }).limit(30).lean();
+
+    const series = [...latestDesc].reverse().map(l => ({
+      date: l.date,
+      value: l.value
+    }));
+
+    const values = series.map(s => s.value).filter(v => typeof v === "number");
+    const latest = values.length ? values[values.length - 1] : null;
+    const min = values.length ? Math.min(...values) : null;
+    const max = values.length ? Math.max(...values) : null;
+    const avg = values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)) : null;
+
+    res.json({ series, stats: { latest, min, max, avg, count: values.length } });
   } catch (err) {
     next(err);
   }
