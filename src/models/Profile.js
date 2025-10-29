@@ -9,7 +9,7 @@ const profileSchema = new mongoose.Schema(
         dueDate: { type: Date },
         sex: { type: String },
         active: { type: Boolean, default: true },
-        notes: {String}
+        notes: { type: String, trim: true }
     },
     { timestamps: true }
 );
