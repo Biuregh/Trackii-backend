@@ -12,10 +12,11 @@ app.use(cors({ origin: process.env.CORS_ORIGIN }));
 app.use(morgan("dev"));
 app.use(passport.initialize());
 require("./config/passport")(passport);
-app.use("/api/v1/profiles", require("./routes/profiles"));
-
 app.get("/health", (req, res) => res.json({ ok: true }));
+app.use("/api/v1/profiles", require("./routes/profiles"));
 app.use("/api/v1/auth", require("./routes/auth"));
+app.use('/api/v1/logs', require('./routes/logs'));
+app.use('/api/v1/prescriptions', require('./routes/prescriptions'));
 app.use((req, res, next) => res.status(404).json({ message: "Not found" }));
 app.use((err, req, res, next) => {
     console.error(err);
