@@ -5,7 +5,7 @@ const authGuard = require("../middleware/authGuard");
 const Profile = require("../models/Profile");
 const Log = require("../models/Log");
 
-router.use(authGuard); 
+router.use(authGuard);
 
 function sendValidation(res, errors) {
     return res.status(422).json({ errors: errors.array() });
@@ -67,3 +67,87 @@ router.get(
         }
     }
 );
+
+router.post(
+    "/",
+    [
+        body("profileId").notEmpty().withMessage("profileId required"),
+        body("category").isIn(["weight", "meal", "water", "feed", "sleep", "growth"]).withMessage("invalid category"),
+        body("value").optional().isFloat().withMessage("value must be a number"),
+        body("date").optional().isISO8601().toDate(),
+        body("startTime").optional().isISO8601().toDate(),
+        body("endTime").optional().isISO8601().toDate(),
+        body("notes").optional().isString().trim()
+    ],
+    async (req, res, next) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) return sendValidation(res, errors);
+
+            const { profileId, category, value, date, startTime, endTime, notes } = req.body;
+
+            const owned = await ownsProfile(req.user.userId, profileId);
+            if (!owned) return res.status(404).json({ message: "Not found" });
+
+            const log = await Log.create({
+                profileId, category, value, date, startTime, endTime, notes
+            });
+
+            res.status(201).json({ data: log });
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.patch(
+    "/:id",
+    [
+        param("id").notEmpty(),
+        body("category").optional().isIn(["weight", "meal", "water", "feed", "sleep", "growth"]),
+        body("value").optional().isFloat(),
+        body("date").optional().isISO8601().toDate(),
+        body("startTime").optional().isISO8601().toDate(),
+        body("endTime").optional().isISO8601().toDate(),
+        body("notes").optional().isString().trim()
+    ],
+    async (req, res, next) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) return sendValidation(res, errors);
+
+            const log = await findOwnedLogOr404(req.params.id, req.user.userId);
+            if (!log) return res.status(404).json({ message: "Not found" });
+
+            // whitelist and apply only provided fields
+            const updates = {};
+            const fields = ["category", "value", "date", "startTime", "endTime", "notes"];
+            for (const f of fields) {
+                if (req.body[f] !== undefined) updates[f] = req.body[f];
+            }
+
+            const updated = await Log.findByIdAndUpdate(log._id, { $set: updates }, { new: true });
+            res.json({ data: updated });
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.delete(
+    "/:id",
+    [param("id").notEmpty()],
+    async (req, res, next) => {
+        try {
+            const log = await findOwnedLogOr404(req.params.id, req.user.userId);
+            if (!log) return res.status(404).json({ message: "Not found" });
+
+            await Log.deleteOne({ _id: log._id });
+            res.status(204).send();
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+module.exports = router;
