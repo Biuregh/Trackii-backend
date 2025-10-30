@@ -11,7 +11,33 @@ function sendValidation(res, errors) {
 
 router.get("/", controller.listProfiles);
 
-router.get("/:id/stats/weight", controller.weightStats);
+router.get(
+  "/:id/stats/weight",
+  [param("id").notEmpty()],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return sendValidation(res, errors);
+      return controller.weightStats(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  "/:id/stats/summary",
+  [param("id").notEmpty()],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return sendValidation(res, errors);
+      return controller.summaryStats ? controller.summaryStats(req, res, next) : controller.getSummaryStats(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 router.post(
   "/",
