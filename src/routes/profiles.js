@@ -1,7 +1,7 @@
 const router = require("express").Router();
-const { body, param, query, validationResult } = require("express-validator");
+const { body, param, validationResult } = require("express-validator");
 const authGuard = require("../middleware/authGuard");
-const controller = require("../controllers/logsController");
+const controller = require("../controllers/profilesController");
 
 router.use(authGuard);
 
@@ -9,41 +9,44 @@ function sendValidation(res, errors) {
   return res.status(422).json({ errors: errors.array() });
 }
 
-router.get(
-  "/profiles/:id/logs",
+router.get("/", controller.listProfiles);
+
+router.get("/:id/stats/weight", controller.weightStats);
+
+router.post(
+  "/",
   [
-    param("id").notEmpty(),
-    query("type").optional().isIn(["weight", "meal", "water", "feed", "sleep", "growth"]),
-    query("limit").optional().isInt({ min: 1, max: 200 }).toInt(),
-    query("page").optional().isInt({ min: 1 }).toInt()
+    body("name").trim().notEmpty().withMessage("name is required"),
+    body("type").optional().isIn(["general", "pregnancy", "child"]).withMessage("invalid type"),
+    body("dob").optional().isISO8601().toDate(),
+    body("active").optional().isBoolean().toBoolean(),
+    body("notes").optional().isString().trim(),
+    body("sex").optional().isString().trim(),
+    body("dueDate")
+      .if(body("type").equals("pregnancy"))
+      .exists().withMessage("dueDate required for pregnancy")
+      .bail()
+      .isISO8601().toDate()
   ],
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return sendValidation(res, errors);
-      return controller.listLogs(req, res, next);
+      return controller.createProfile(req, res, next);
     } catch (err) {
       next(err);
     }
   }
 );
 
-router.post(
-  "/",
-  [
-    body("profileId").notEmpty().withMessage("profileId required"),
-    body("category").isIn(["weight", "meal", "water", "feed", "sleep", "growth"]).withMessage("invalid category"),
-    body("value").optional().isFloat().withMessage("value must be a number"),
-    body("date").optional().isISO8601().toDate(),
-    body("startTime").optional().isISO8601().toDate(),
-    body("endTime").optional().isISO8601().toDate(),
-    body("notes").optional().isString().trim()
-  ],
+router.get(
+  "/:id",
+  [param("id").notEmpty()],
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return sendValidation(res, errors);
-      return controller.createLog(req, res, next);
+      return controller.getProfile(req, res, next);
     } catch (err) {
       next(err);
     }
@@ -54,18 +57,19 @@ router.patch(
   "/:id",
   [
     param("id").notEmpty(),
-    body("category").optional().isIn(["weight", "meal", "water", "feed", "sleep", "growth"]),
-    body("value").optional().isFloat(),
-    body("date").optional().isISO8601().toDate(),
-    body("startTime").optional().isISO8601().toDate(),
-    body("endTime").optional().isISO8601().toDate(),
-    body("notes").optional().isString().trim()
+    body("name").optional().trim().notEmpty().withMessage("name cannot be empty"),
+    body("type").optional().isIn(["general", "pregnancy", "child"]).withMessage("invalid type"),
+    body("dob").optional().isISO8601().toDate(),
+    body("active").optional().isBoolean().toBoolean(),
+    body("notes").optional().isString().trim(),
+    body("sex").optional().isString().trim(),
+    body("dueDate").optional().isISO8601().toDate(),
   ],
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return sendValidation(res, errors);
-      return controller.updateLog(req, res, next);
+      return controller.updateProfile(req, res, next);
     } catch (err) {
       next(err);
     }
@@ -79,7 +83,7 @@ router.delete(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return sendValidation(res, errors);
-      return controller.deleteLog(req, res, next);
+      return controller.deleteProfile(req, res, next);
     } catch (err) {
       next(err);
     }
