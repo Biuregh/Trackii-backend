@@ -12,5 +12,6 @@ const logSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+logSchema.index({ profileId: 1, date: -1 });
 
 module.exports = mongoose.model("Log", logSchema);
