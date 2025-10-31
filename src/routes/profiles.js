@@ -32,7 +32,7 @@ router.get(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return sendValidation(res, errors);
-      return controller.summaryStats ? controller.summaryStats(req, res, next) : controller.getSummaryStats(req, res, next);
+      return controller.getSummaryStats(req, res, next);
     } catch (err) {
       next(err);
     }

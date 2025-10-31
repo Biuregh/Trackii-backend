@@ -3,8 +3,7 @@ const Profile = require("../models/Profile");
 const Log = require("../models/Log");
 
 async function findOwnedProfileOr404(id, userId) {
-    if (!mongoose.Types.ObjectId.isValid(id)) return null;
-    const p = await Profile.findById(id);
+    const p = await Profile.findById(id).lean();
     if (!p) return null;
     if (p.userId.toString() !== userId) return null;
     return p;
@@ -50,23 +49,16 @@ async function getProfile(req, res, next) {
 
 async function updateProfile(req, res, next) {
     try {
-        const errors = req._validationErrors;
-        if (errors && errors.length) return res.status(422).json({ errors });
-
         const p = await findOwnedProfileOr404(req.params.id, req.user.userId);
         if (!p) return res.status(404).json({ message: "Not found" });
 
-        const { name, dob, type, active } = req.body;
+        const { name, dob, type, active, notes, sex, dueDate} = req.body;
         if (name !== undefined) p.name = name;
         if (dob !== undefined) p.dob = dob;
         if (type !== undefined) p.type = type;
         if (active !== undefined) p.active = active;
-        if (req.body.notes !== undefined) p.notes = req.body.notes;
-        if (req.body.sex !== undefined) p.sex = req.body.sex;
-        if (req.body.type === "pregnancy" && !req.body.dueDate && !p.dueDate) {
-            return res.status(422).json({ message: "dueDate required for pregnancy profiles" });
-        }
-        if (req.body.dueDate !== undefined) p.dueDate = req.body.dueDate;
+        if (notes !== undefined) p.notes = req.body.notes;
+        if (sex !== undefined) p.sex = req.body.sex;
 
         await p.save();
         return res.status(200).json({ data: p });
@@ -92,7 +84,7 @@ async function weightStats(req, res, next) {
             return res.status(404).json({ message: "Not found" });
         }
 
-        const p = await Profile.findById(req.params.id).select("userId").lean();
+        const p = await findOwnedProfileOr404(req.params.id, req.user.userId)
         if (!p || p.userId.toString() !== req.user.userId) {
             return res.status(404).json({ message: "Not found" });
         }
@@ -116,6 +108,28 @@ async function weightStats(req, res, next) {
     }
 }
 
+async function getSummaryStats(req, res, next) {
+    try {
+        const p = await findOwnedProfileOr404(req.params.id, req.user.userId);
+        if (!p) return res.status(404).json({ message: "Not found" });
+
+        const stats = await Log.aggregate([
+            { $match: { profileId: new mongoose.Types.ObjectId(req.params.id) } },
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 },
+                    latest: { $max: "$date" }
+                }
+            }
+        ]);
+
+        return res.status(200).json({ data: stats });
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     findOwnedProfileOr404,
     listProfiles,
@@ -123,5 +137,6 @@ module.exports = {
     getProfile,
     updateProfile,
     deleteProfile,
+    getSummaryStats,
     weightStats
 };
