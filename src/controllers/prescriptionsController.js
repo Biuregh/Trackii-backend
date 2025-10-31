@@ -18,7 +18,7 @@ async function findOwnedRxOr404(rxId, userId) {
 
 async function listPrescriptions(req, res, next) {
     try {
-        const profileId = req.params.id;
+        const profileId = req.params.profileId;
         const userId = req.user.userId;
 
         const owned = await ownsProfile(userId, profileId);
