@@ -20,19 +20,29 @@ async function listProfiles(req, res, next) {
 
 async function createProfile(req, res, next) {
     try {
-        const { name, dob, type, active, notes, sex, dueDate } = req.body;
+        const { name, dob, type = "general", active, notes, sex, dueDate } = req.body;
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: "name is required" });
+        }
+
         const profile = await Profile.create({
             userId: req.user.userId,
-            name,
+            name: name.trim(),
             dob,
-            type,
+            type,     // must match your enum: "general" | "pregnancy" | "child"
             active,
             notes,
             sex,
-            dueDate
+            dueDate,
         });
+
         return res.status(201).json({ data: profile });
     } catch (err) {
+        console.error("Create profile error:", err);
+        if (err.name === "ValidationError") {
+            return res.status(400).json({ message: "Validation failed", details: err.errors });
+        }
         return next(err);
     }
 }
@@ -49,19 +59,19 @@ async function getProfile(req, res, next) {
 
 async function updateProfile(req, res, next) {
     try {
-        const p = await findOwnedProfileOr404(req.params.id, req.user.userId);
-        if (!p) return res.status(404).json({ message: "Not found" });
+        const { id } = req.params;
+        const update = {};
+        const fields = ["name", "dob", "type", "active", "notes", "sex", "dueDate"];
+        for (const f of fields) if (req.body[f] !== undefined) update[f] = req.body[f];
 
-        const { name, dob, type, active, notes, sex, dueDate} = req.body;
-        if (name !== undefined) p.name = name;
-        if (dob !== undefined) p.dob = dob;
-        if (type !== undefined) p.type = type;
-        if (active !== undefined) p.active = active;
-        if (notes !== undefined) p.notes = req.body.notes;
-        if (sex !== undefined) p.sex = req.body.sex;
+        const updated = await Profile.findOneAndUpdate(
+            { _id: id, userId: req.user.userId },
+            { $set: update },
+            { new: true, runValidators: true }
+        ).lean();
 
-        await p.save();
-        return res.status(200).json({ data: p });
+        if (!updated) return res.status(404).json({ message: "Not found" });
+        return res.status(200).json({ data: updated });
     } catch (err) {
         return next(err);
     }
@@ -69,9 +79,9 @@ async function updateProfile(req, res, next) {
 
 async function deleteProfile(req, res, next) {
     try {
-        const p = await findOwnedProfileOr404(req.params.id, req.user.userId);
-        if (!p) return res.status(404).json({ message: "Not found" });
-        await p.deleteOne();
+        const { id } = req.params;
+        const result = await Profile.deleteOne({ _id: id, userId: req.user.userId });
+        if (result.deletedCount === 0) return res.status(404).json({ message: "Not found" });
         return res.status(204).send();
     } catch (err) {
         return next(err);
