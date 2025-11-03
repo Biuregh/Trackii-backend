@@ -33,8 +33,10 @@ router.get(
 router.post(
   "/",
   [
-    body("profileId").notEmpty().withMessage("profileId required"),
-    body("category").isIn(["weight","meal","water","feed","sleep","growth"]).withMessage("invalid category"),
+    body("profileId")
+      .notEmpty().withMessage("profileId required")
+      .isMongoId().withMessage("Invalid profileId"),
+    body("category").isIn(["weight", "meal", "water", "feed", "sleep", "growth"]).withMessage("invalid category"),
     body("value").optional().isFloat().withMessage("value must be a number"),
     body("date").optional().isISO8601().toDate(),
     body("startTime").optional().isISO8601().toDate(),
@@ -56,7 +58,7 @@ router.patch(
   "/:id",
   [
     param("id").notEmpty(),
-    body("category").optional().isIn(["weight","meal","water","feed","sleep","growth"]),
+    body("category").optional().isIn(["weight", "meal", "water", "feed", "sleep", "growth"]),
     body("value").optional().isFloat(),
     body("date").optional().isISO8601().toDate(),
     body("startTime").optional().isISO8601().toDate(),

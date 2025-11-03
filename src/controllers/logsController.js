@@ -27,8 +27,8 @@ async function listLogs(req, res, next) {
     const filter = { profileId };
     if (req.query.type) filter.category = req.query.type;
 
-    const limit = req.query.limit ?? 25;
-    const page = req.query.page ?? 1;
+    const limit = req.query.limit || 25;
+    const page = req.query.page || 1;
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -68,6 +68,13 @@ async function updateLog(req, res, next) {
   try {
     const log = await findOwnedLogOr404(req.params.id, req.user.userId);
     if (!log) return res.status(404).json({ message: "Not found" });
+
+    if (req.body.value !== undefined) {
+      const targetCategory = req.body.category || log.category;
+      if ((targetCategory === "weight" || targetCategory === "water") && Number(req.body.value) <= 0) {
+        return res.status(422).json({ message: "value must be a positive number for weight/water" });
+      }
+    }
 
     if (req.body.category && !["weight", "meal", "water", "feed", "sleep", "growth"].includes(req.body.category)) {
       return res.status(422).json({ message: "invalid category" });

@@ -13,7 +13,7 @@ module.exports = function setupPassport(passport) {
                     if (!user) return done(null, false);
                     const ok = await bcrypt.compare(password, user.passwordHash);
                     if (!ok) return done(null, false);
-                    return done(null, { userId: user._id.toString(), email: user.email });
+                    return done(null, user);
                 } catch (err) {
                     return done(err);
                 }
@@ -29,7 +29,9 @@ module.exports = function setupPassport(passport) {
             },
             async (payload, done) => {
                 try {
-                    return done(null, { userId: payload.userId, email: payload.email });
+                    const user = await User.findById(payload.userId).select("email name");
+                    if (!user) return done(null, false);
+                    return done(null, user);
                 } catch (err) {
                     return done(err, false);
                 }
