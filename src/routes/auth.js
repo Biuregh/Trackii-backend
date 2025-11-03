@@ -30,28 +30,20 @@ router.post(
 );
 router.post(
     "/login",
-    [
-        body("email").isEmail().withMessage("Valid email required"),
-        body("password").notEmpty().withMessage("Password is required")
-    ],
+    [body("email").isEmail(), body("password").notEmpty()],
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
-        next();
-    },
-
-    passport.authenticate("local", { session: false }),
-    (req, res, next) => {
-        const user = req.user;
-        const token = jwt.sign(
-            { userId: user._id.toString(), email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: "7d" }
-        );
-        return res.json({
-            token,
-            user: { id: user._id, email: user.email, name:user.name }
-        });
+        passport.authenticate("local", { session: false }, (err, user) => {
+            if (err) return next(err);
+            if (!user) return res.status(401).json({ message: "Invalid credentials" });
+            const token = jwt.sign(
+                { userId: user.id, email: user.email },
+                process.env.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
+            return res.json({ token, user: { id: user.id, email: user.email } });
+        })(req, res, next);
     }
 );
 
@@ -65,13 +57,13 @@ router.get("/me", async (req, res) => {
 
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(payload.userId).select('email name');
+        const user = await User.findById(payload.userId).select("email name");
         if (!user) return res.status(401).json({ message: "User not found" });
         return res.json({
             user: {
                 id: payload.userId,
                 email: payload.email,
-                name:user.name
+                name: user.name
             }
         });
     } catch (err) {

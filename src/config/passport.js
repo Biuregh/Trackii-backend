@@ -13,7 +13,7 @@ module.exports = function setupPassport(passport) {
                     if (!user) return done(null, false);
                     const ok = await bcrypt.compare(password, user.passwordHash);
                     if (!ok) return done(null, false);
-                    return done(null, user);
+                    return done(null, { id: String(user._id), email: user.email });
                 } catch (err) {
                     return done(err);
                 }
