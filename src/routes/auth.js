@@ -9,22 +9,34 @@ router.post(
     "/register",
     [
         body("email").isEmail().withMessage("Valid email required"),
-        body("password").isLength({ min: 6 }).withMessage("Password >= 6 chars")
+        body("password").isLength({ min: 6 }).withMessage("Password >= 6 chars"),
+        body("name").optional().isString().trim(),
     ],
     async (req, res, next) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
+
             const email = req.body.email.toLowerCase().trim();
             const exists = await User.findOne({ email });
             if (exists) return res.status(409).json({ message: "Email already in use" });
+
             const passwordHash = await bcrypt.hash(req.body.password, 10);
-            const user = await User.create({ email, passwordHash, name: req.body.name });
+            const name = (req.body.name || "").trim();
+            const user = await User.create({ email, passwordHash, name });
+
+            const token = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, {
+                expiresIn: "7d",
+            });
+
             return res.status(201).json({
-                user: { id: user._id, email: user.email, name: user.name }
+                data: {
+                    token,
+                    user: { id: user._id, email: user.email, name: user.name || "" },
+                },
             });
         } catch (err) {
-            next(err)
+            next(err);
         }
     }
 );
@@ -34,15 +46,24 @@ router.post(
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
-        passport.authenticate("local", { session: false }, (err, user) => {
+
+        passport.authenticate("local", { session: false }, async (err, user) => {
             if (err) return next(err);
             if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+            const fresh = await User.findById(user.id).select("email name");
             const token = jwt.sign(
-                { userId: user.id, email: user.email },
+                { userId: user.id, email: fresh.email },
                 process.env.JWT_SECRET,
                 { expiresIn: "7d" }
             );
-            return res.json({ token, user: { id: user.id, email: user.email } });
+
+            return res.json({
+                data: {
+                    token,
+                    user: { id: user.id, email: fresh.email, name: fresh.name || "" },
+                },
+            });
         })(req, res, next);
     }
 );
@@ -60,11 +81,7 @@ router.get("/me", async (req, res) => {
         const user = await User.findById(payload.userId).select("email name");
         if (!user) return res.status(401).json({ message: "User not found" });
         return res.json({
-            user: {
-                id: payload.userId,
-                email: payload.email,
-                name: user.name
-            }
+            data: { id: payload.userId, email: user.email, name: user.name || "" },
         });
     } catch (err) {
         return res.status(401).json({ message: "Invalid token" });
