@@ -1,19 +1,24 @@
 # Trackii
 
+![Trackii Dashboard Preview](./public/Trackii-dashboard.png)
+
 **Trackii** is a personal and family wellness tracker built with **React, Express, MongoDB, and Tailwind CSS**.  
-It helps users log daily health data — such as **weight, meals, water intake, and prescriptions** — while providing a clean, modern dashboard to visualize progress and stay organized.  
+It helps users log daily health data such as **weight, meals, water intake, and prescriptions**, while providing a clean, modern dashboard to visualize progress and stay organized.  
 
 Trackii is designed as a simple yet expandable foundation for managing health and wellness over time.
 
 ---
 
 ## Features (MVP)
-- **User Authentication** – Secure login and registration using JWT.  
-- **Profiles Management** – Create, edit, or delete user profiles.  
-- **Logs Tracking** – Add daily **weight**, **meal**, and **water** entries. 
-- **Prescription Manager** – Record medications with dosage, frequency, and active status.
-- **Progress Chart** – Visualize weight trends over time.
-- **Responsive Design** – Built with Tailwind for a clean and mobile-friendly UI.
+- **Multi-Profile Dashboard** – Manage multiple profiles (general, pregnancy, or child)  
+- **Health Logs** – Record daily weight, meals, and water intake  
+- **Prescription Manager** – Track medications with dosage, frequency, and active status  
+- **Reminders System** – Intelligent medication and hydration reminders with dismiss logic  
+- **Insights** – Displays recent logs and key metrics  
+- **Visual Trends** – Weight charts for tracking progress  
+- **Ask AI (Beta)** – Ask general wellness questions using the Wikipedia API (no medical advice)  
+- **Secure Authentication** – JWT-based login and registration  
+- **Modern UI** – Built with Tailwind CSS for a professional, responsive interface 
 
 ---
 
